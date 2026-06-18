@@ -6,3 +6,6 @@
 
 # Databases
 /databases
+
+# Cache
+/__pycache__

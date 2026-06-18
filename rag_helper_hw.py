@@ -1,4 +1,5 @@
 from tqdm import tqdm
+from openai import OpenAI
 
 # System Prompt
 INSTRUCTIONS = """
@@ -24,10 +25,9 @@ class RAGBase:
     def __init__(
         self,
         index,
-        llm_client,
+        llm_client = OpenAI(),
         instructions: str = INSTRUCTIONS,
         prompt_template: str = PROMPT_TEMPLATE,
-        course: str = "llm-zoomcamp",
         model: str = "gpt-5.4-nano",
     ) -> None:
         """
@@ -38,7 +38,6 @@ class RAGBase:
         self.llm_client = llm_client
         self.instructions = instructions
         self.prompt_template = prompt_template
-        self.course = course
         self.model = model
 
     def search(
@@ -50,17 +49,13 @@ class RAGBase:
         Searches the index for the given query and returns the results.
         """
         boost_dict = {
-            "question": 3.0,
-            "section": 0.5,
-        }
-        filter_dict = {
-            "course": self.course
+            "context": 3.0,
+            "filename": 0.5,
         }
 
         return self.index.search(
             query=query,
             boost_dict=boost_dict,
-            filter_dict=filter_dict,
             num_results=num_results,
         )
 
@@ -74,9 +69,8 @@ class RAGBase:
         lines = []
 
         for doc in tqdm(search_results, desc="Building context", colour="yellow"):
-            lines.append(doc["section"])
-            lines.append("Q: " + doc["question"])
-            lines.append("A: " + doc["answer"])
+            lines.append("Filename: " + doc["filename"])
+            lines.append("Content: " + doc["content"])
             lines.append("")
 
         return "\n".join(lines).strip()
@@ -112,7 +106,7 @@ class RAGBase:
             input = messages,
         )
 
-        return response.output_text
+        return (response.output_text, response.usage.input_tokens)
 
     def rag(
         self,
