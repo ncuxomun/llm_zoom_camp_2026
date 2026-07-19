@@ -1,6 +1,8 @@
 import streamlit as st
 from assist_setup import create_assistant
 from db_save import save_conversation
+from db_feedback import save_feedback
+from judge import evaluate_relevance
 
 assistant = create_assistant()
 
@@ -22,3 +24,22 @@ if st.button("Ask"):
 
         conversation_id = save_conversation(record, user_input, "llm-zoomcamp")
         st.session_state.conversation_id = conversation_id
+
+        relevance, explanation = evaluate_relevance(user_input, answer)
+        save_feedback(conversation_id, source="judge", relevance=relevance, explanation=explanation)
+        st.write(f"Relevance: {relevance}")
+        st.write(f"Explanation: {explanation}")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    if st.button("+1"):
+        cid = st.session_state.conversation_id
+        save_feedback(cid, "user", score=1)
+        st.write("Thanks!")
+
+with col2:
+    if st.button("-1"):
+        cid = st.session_state.conversation_id
+        save_feedback(cid, "user", score=-1)
+        st.write("Thanks for the feedback!")

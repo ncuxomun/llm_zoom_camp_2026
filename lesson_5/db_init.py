@@ -21,7 +21,7 @@ def init_db(drop=False):
                 cur.execute("DROP TABLE IF EXISTS conversations")
 
             cur.execute("""
-                CREATE TABLE conversations (
+                CREATE TABLE IF NOT EXISTS conversations (
                     id SERIAL PRIMARY KEY,
                     question TEXT NOT NULL,
                     answer TEXT NOT NULL,
@@ -41,6 +41,29 @@ def init_db(drop=False):
     finally:
         conn.close()
 
+def init_feedback(drop=False):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            if drop:
+                cur.execute("DROP TABLE IF EXISTS feedback")
+
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS feedback (
+                    id SERIAL PRIMARY KEY,
+                    conversation_id INTEGER REFERENCES conversations(id),
+                    source TEXT NOT NULL,
+                    relevance TEXT,
+                    explanation TEXT,
+                    score INTEGER,
+                    timestamp TIMESTAMP WITH TIME ZONE NOT NULL
+                )
+            """)
+        conn.commit()
+    finally:
+        conn.close()
+
 if __name__ == "__main__":
     init_db()
+    init_feedback()
     print("Database initialized")
